@@ -1,17 +1,23 @@
-FROM rivee/golang-base-build-curl:latest
+FROM rivee/golang-base-build-curl:latest AS builder
 
-ENV DB_PORT 8082
+WORKDIR /go/app
+
+COPY /docker-go-2 .
+
+RUN go mod tidy
+
+RUN cd cmd/db/ && go build .
+
+FROM rivee/alpine_curl AS runner
+
+WORKDIR /database
 
 WORKDIR /go
 
-COPY /docker-go-2 ./app
-
-RUN cd app/ && go mod tidy
-
-RUN cd /go/app/cmd/db/ && go build -o /go/app/go-db && mkdir /database
+COPY --from=builder /go/app/cmd/db/db ./
 
 VOLUME [ "/database" ]
 
-ENTRYPOINT [ "/go/app/go-db" ]  
+CMD [ "./db" ]
 
 EXPOSE 8082

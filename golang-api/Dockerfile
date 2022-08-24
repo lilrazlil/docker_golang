@@ -1,17 +1,20 @@
-FROM rivee/golang-base-build-curl:latest
+FROM rivee/golang-base-build-curl:latest AS builder
 
-ENV API_PORT 8081
+WORKDIR /go/app
 
-ARG STAMP
+COPY /docker-go-1 .
+
+RUN go mod tidy 
+
+RUN cd cmd/api && go build .
+
+
+FROM rivee/alpine_curl as runner
 
 WORKDIR /go
 
-COPY /docker-go-1 ./app
-
-RUN cd app/ && go mod tidy
-
-RUN cd /go/app/cmd/api/ && go build -o /go/app/api
-
-ENTRYPOINT [ "/go/app/api" ]  
+COPY --from=builder /go/app/cmd/api/api ./
 
 EXPOSE 8081
+
+CMD [ "./api" ]
